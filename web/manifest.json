@@ -1,6 +1,6 @@
 {
-    "name": "chess_project",
-    "short_name": "chess_project",
+    "name": "chess1",
+    "short_name": "chess1",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

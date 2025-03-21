@@ -1,4 +1,4 @@
-package com.example.chess_project
+package com.example.chess1
 
 import io.flutter.embedding.android.FlutterActivity
 
