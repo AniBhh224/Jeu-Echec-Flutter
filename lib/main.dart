@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'board.dart'; // importe le fichier avec le plateau
+import 'board.dart';
 
 void main() {
   runApp(ChessBoardApp());
