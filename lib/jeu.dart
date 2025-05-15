@@ -155,10 +155,13 @@ class _JeuState extends State<Jeu> {
 
   @override
   Widget build(BuildContext context) {
-    return ChessBoard(
-      board: board,
-      casesPossibles: casesPossibles,
-      onTapCase: onTapCase,
+    return Center( // ← ajoute ceci
+      child: ChessBoard(
+        board: board,
+        casesPossibles: casesPossibles,
+        onTapCase: onTapCase,
+      ),
     );
   }
+
 }
