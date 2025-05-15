@@ -1,132 +1,38 @@
 import 'package:flutter/material.dart';
 import 'pieces.dart';
 
-class ChessBoard extends StatefulWidget {
-  const ChessBoard({super.key});
+class ChessBoard extends StatelessWidget {
+  final List<List<ChessPiece?>> board;
+  final List<List<bool>> casesPossibles;
+  final void Function(int row, int col) onTapCase;
 
-  @override
-  State<ChessBoard> createState() => _ChessBoardState();
-}
+  const ChessBoard({
+    super.key,
+    required this.board,
+    required this.casesPossibles,
+    required this.onTapCase,
+  });
 
-class _ChessBoardState extends State<ChessBoard> {
-  static const int boardSize = 8;
   static const Color lightSquare = Color(0xFFEEEED2);
   static const Color darkSquare = Color(0xFF769656);
-
-  late List<List<ChessPiece?>> board;
-  late List<List<bool>> casesPossibles;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeBoard();
-  }
-
-  void _initializeBoard() {
-    board = List.generate(8, (_) => List.generate(8, (_) => null));
-    casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
-
-    // Pions noirs
-    for (int col = 0; col < 8; col++) {
-      board[1][col] = ChessPiece(type: ChessPieceType.pawn, isWhite: false);
-    }
-
-    // Pions blancs
-    for (int col = 0; col < 8; col++) {
-      board[6][col] = ChessPiece(type: ChessPieceType.pawn, isWhite: true);
-    }
-
-    // Pièces noires
-    board[0] = [
-      ChessPiece(type: ChessPieceType.rook, isWhite: false),
-      ChessPiece(type: ChessPieceType.knight, isWhite: false),
-      ChessPiece(type: ChessPieceType.bishop, isWhite: false),
-      ChessPiece(type: ChessPieceType.queen, isWhite: false),
-      ChessPiece(type: ChessPieceType.king, isWhite: false),
-      ChessPiece(type: ChessPieceType.bishop, isWhite: false),
-      ChessPiece(type: ChessPieceType.knight, isWhite: false),
-      ChessPiece(type: ChessPieceType.rook, isWhite: false),
-    ];
-
-    // Pièces blanches
-    board[7] = [
-      ChessPiece(type: ChessPieceType.rook, isWhite: true),
-      ChessPiece(type: ChessPieceType.knight, isWhite: true),
-      ChessPiece(type: ChessPieceType.bishop, isWhite: true),
-      ChessPiece(type: ChessPieceType.queen, isWhite: true),
-      ChessPiece(type: ChessPieceType.king, isWhite: true),
-      ChessPiece(type: ChessPieceType.bishop, isWhite: true),
-      ChessPiece(type: ChessPieceType.knight, isWhite: true),
-      ChessPiece(type: ChessPieceType.rook, isWhite: true),
-    ];
-  }
-  void calcul_lateral(int, row, int col){
-    casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
-
-  }
-  void calcul_diag(int, row, int col){
-
-  }
-  void calcul_case_possible(int row, int col) {
-    ChessPiece? piece = board[row][col];
-
-    // Réinitialiser les cases possibles
-    casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
-
-    if (piece == null) return;
-
-    if (piece.type == ChessPieceType.pawn) {
-      int direction = piece.isWhite ? -1 : 1;
-
-      int nextRow = row + direction;
-      if (_inBounds(nextRow, col) && board[nextRow][col] == null) {
-        casesPossibles[nextRow][col] = true;
-
-        int nextNextRow = row + 2 * direction;
-        if (piece.initPos &&
-            _inBounds(nextNextRow, col) &&
-            board[nextNextRow][col] == null) {
-          casesPossibles[nextNextRow][col] = true;
-        }
-      }
-
-      for (int deltaCol in [-1, 1]) {
-        int diagCol = col + deltaCol;
-        if (_inBounds(nextRow, diagCol) &&
-            board[nextRow][diagCol] != null &&
-            board[nextRow][diagCol]!.isWhite != piece.isWhite) {
-          casesPossibles[nextRow][diagCol] = true;
-        }
-      }
-    }
-  else if(piece.type == ChessPieceType.knight){
-
-    }
-  else if(piece.type == ChessPieceType.bishop){
-    #utiliser calcul diag
-    }
-    setState(() {});
-  }
-
-  bool _inBounds(int row, int col) => row >= 0 && row < 8 && col >= 0 && col < 8;
 
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: 1,
       child: GridView.builder(
-        itemCount: boardSize * boardSize,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: boardSize,
-        ),
+        itemCount: 64,
         physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 8,
+        ),
         itemBuilder: (context, index) {
-          int row = index ~/ boardSize;
-          int col = index % boardSize;
+          int row = index ~/ 8;
+          int col = index % 8;
           bool isLight = (row + col) % 2 == 0;
 
           return GestureDetector(
-            onTap: () => calcul_case_possible(row, col),
+            onTap: () => onTapCase(row, col),
             child: Container(
               decoration: BoxDecoration(
                 color: isLight ? lightSquare : darkSquare,
@@ -144,5 +50,34 @@ class _ChessBoardState extends State<ChessBoard> {
         },
       ),
     );
+  }
+
+  static List<List<ChessPiece?>> getInitialBoard() {
+    final board = List.generate(8, (_) => List<ChessPiece?>.filled(8, null));
+
+    for (int col = 0; col < 8; col++) {
+      board[1][col] = ChessPiece(type: ChessPieceType.pawn, isWhite: false);
+      board[6][col] = ChessPiece(type: ChessPieceType.pawn, isWhite: true);
+    }
+
+    board[0][0] = ChessPiece(type: ChessPieceType.rook, isWhite: false);
+    board[0][1] = ChessPiece(type: ChessPieceType.knight, isWhite: false);
+    board[0][2] = ChessPiece(type: ChessPieceType.bishop, isWhite: false);
+    board[0][3] = ChessPiece(type: ChessPieceType.queen, isWhite: false);
+    board[0][4] = ChessPiece(type: ChessPieceType.king, isWhite: false);
+    board[0][5] = ChessPiece(type: ChessPieceType.bishop, isWhite: false);
+    board[0][6] = ChessPiece(type: ChessPieceType.knight, isWhite: false);
+    board[0][7] = ChessPiece(type: ChessPieceType.rook, isWhite: false);
+
+    board[7][0] = ChessPiece(type: ChessPieceType.rook, isWhite: true);
+    board[7][1] = ChessPiece(type: ChessPieceType.knight, isWhite: true);
+    board[7][2] = ChessPiece(type: ChessPieceType.bishop, isWhite: true);
+    board[7][3] = ChessPiece(type: ChessPieceType.queen, isWhite: true);
+    board[7][4] = ChessPiece(type: ChessPieceType.king, isWhite: true);
+    board[7][5] = ChessPiece(type: ChessPieceType.bishop, isWhite: true);
+    board[7][6] = ChessPiece(type: ChessPieceType.knight, isWhite: true);
+    board[7][7] = ChessPiece(type: ChessPieceType.rook, isWhite: true);
+
+    return board;
   }
 }

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'board.dart';
+import 'jeu.dart';
 
 void main() {
-  runApp(ChessBoardApp());
+  runApp(const ChessApp());
 }
 
-class ChessBoardApp extends StatelessWidget {
+class ChessApp extends StatelessWidget {
+  const ChessApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Chess.com Style Board',
+      title: 'Jeu d’échecs',
       home: Scaffold(
-        appBar: AppBar(title: Text('Chess.com Board')),
-        body: Center(child: ChessBoard()),
+        appBar: AppBar(title: const Text('Jeu d’échecs')),
+        body: const Jeu(),
       ),
     );
   }

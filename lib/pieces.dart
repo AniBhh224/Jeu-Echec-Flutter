@@ -7,7 +7,7 @@ class ChessPiece {
   final bool isWhite;
   final bool initPos;
 
-  ChessPiece({
+  const ChessPiece({
     required this.type,
     required this.isWhite,
     this.initPos = true,
