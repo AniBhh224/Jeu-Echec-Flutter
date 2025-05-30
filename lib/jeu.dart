@@ -10,6 +10,58 @@ class Jeu extends StatefulWidget {
   State<Jeu> createState() => _JeuState();
 }
 
+class BandeJoueur extends StatelessWidget {
+  final bool estBlanc;
+  final bool actif;
+  final String nom;
+
+  const BandeJoueur({
+    super.key,
+    required this.estBlanc,
+    required this.nom,
+    required this.actif,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3EFE7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: actif ? const Color(0xFF8E24AA) : Colors.transparent,
+          width: 3
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            child: Image.asset(
+              estBlanc ? 'assets/images/wp.png' : 'assets/images/bp.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          const SizedBox(width: 10),
+          Text(
+            nom,
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+
 class _JeuState extends State<Jeu> {
   late List<List<ChessPiece?>> board;
   late List<List<bool>> casesPossibles;
@@ -29,6 +81,8 @@ class _JeuState extends State<Jeu> {
     joueurBlanc = const Joueur(nom: 'Blanc', estBlanc: true);
     joueurNoir = const Joueur(nom: 'Noir', estBlanc: false);
     joueurActuel = joueurBlanc;
+
+
   }
 
   void onTapCase(int row, int col) {
@@ -331,23 +385,60 @@ class _JeuState extends State<Jeu> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text("Au tour de : ${joueurActuel.nom}",
-              style: const TextStyle(fontSize: 20)),
-        ),
-        Expanded(
-          child: Center(
-            child: ChessBoard(
-              board: board,
-              casesPossibles: casesPossibles,
-              onTapCase: onTapCase,
-            ),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3EFE7), // Fond violet clair
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 16.0),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  BandeJoueur(
+                    estBlanc: true,
+                    nom: joueurBlanc.nom,
+                    actif: joueurActuel == joueurBlanc,
+                  ),
+                  BandeJoueur(
+                    estBlanc: false,
+                    nom: joueurNoir.nom,
+                    actif: joueurActuel == joueurNoir,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              Expanded(
+                child: Center(
+                  child: ChessBoard(
+                    board: board,
+                    casesPossibles: casesPossibles,
+                    onTapCase: onTapCase,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  child: Image.asset(
+                    'assets/images/home.png',
+                    width: 70,
+                    height: 70,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
+
+
 }
