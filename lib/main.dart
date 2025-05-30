@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'jeu.dart';
+import 'menu.dart'; // NE PAS OUBLIER !
 
-void main() {
-  runApp(const ChessApp());
-}
+void main() => runApp(const ChessApp());
 
 class ChessApp extends StatelessWidget {
   const ChessApp({super.key});
@@ -11,11 +9,12 @@ class ChessApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Jeu d’échecs',
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Jeu d’échecs')),
-        body: const Jeu(),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'Roboto',
+        useMaterial3: true, // Optionnel, pour moderniser l’apparence
       ),
+      home: const MenuPrincipal(), // ← LE MENU VIOLET ICI
     );
   }
 }

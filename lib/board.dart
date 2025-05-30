@@ -13,44 +13,103 @@ class ChessBoard extends StatelessWidget {
     required this.onTapCase,
   });
 
-  static const Color lightSquare = Color(0xFFEEEED2);
-  static const Color darkSquare = Color(0xFF769656);
+  static const Color lightSquare = Color(0xFFF3EFE7); // Beige clair
+  static const Color darkSquare = Color(0xFF8E24AA);  // Violet foncé
+
 
   @override
+  @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: GridView.builder(
-        itemCount: 64,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 8,
-        ),
-        itemBuilder: (context, index) {
-          int row = index ~/ 8;
-          int col = index % 8;
-          bool isLight = (row + col) % 2 == 0;
-
-          return GestureDetector(
-            onTap: () => onTapCase(row, col),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isLight ? lightSquare : darkSquare,
-              ),
-              child: Stack(
-                children: [
-                  if (casesPossibles[row][col])
-                    Container(color: Colors.green.withOpacity(0.4)),
-                  if (board[row][col] != null)
-                    Center(child: board[row][col]!.buildImage(size: 44)),
-                ],
-              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Colonne des numéros à gauche
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(8, (row) {
+                return SizedBox(
+                  height: 44,
+                  width: 20,
+                  child: Center(
+                    child: Text(
+                      '${8 - row}',
+                      style: const TextStyle(fontSize: 12, color: Colors.black),
+                    ),
+                  ),
+                );
+              }),
             ),
-          );
-        },
-      ),
+            // Grille des cases
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(8, (row) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(8, (col) {
+                    bool isLight = (row + col) % 2 == 0;
+
+                    return GestureDetector(
+                      onTap: () => onTapCase(row, col),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isLight ? lightSquare : darkSquare,
+                        ),
+                        child: Stack(
+                          children: [
+                            if (casesPossibles[row][col])
+                              Container(color: Colors.green.withOpacity(0.4)),
+                            if (board[row][col] != null)
+                              Center(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        offset: const Offset(2, 2),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: board[row][col]!.buildImage(size: 38),
+                                ),
+                              ),
+
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                );
+              }),
+            ),
+          ],
+        ),
+        // Ligne des lettres en bas
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(8, (col) {
+            return SizedBox(
+              width: 44,
+              height: 20,
+              child: Center(
+                child: Text(
+                  String.fromCharCode(97 + col), // 'a' à 'h'
+                  style: const TextStyle(fontSize: 12, color: Colors.black),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
+
 
   static List<List<ChessPiece?>> getInitialBoard() {
     final board = List.generate(8, (_) => List<ChessPiece?>.filled(8, null));

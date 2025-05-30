@@ -8,11 +8,70 @@ import 'utils.dart';
 enum PlayerType { human, bot }
 
 class Jeu extends StatefulWidget {
-  const Jeu({super.key});
+  final PlayerType joueurBlancType;
+  final PlayerType joueurNoirType;
+
+  const Jeu({
+    super.key,
+    this.joueurBlancType = PlayerType.human,
+    this.joueurNoirType = PlayerType.human,
+  });
 
   @override
   State<Jeu> createState() => _JeuState();
 }
+
+class BandeJoueur extends StatelessWidget {
+  final bool estBlanc;
+  final bool actif;
+  final String nom;
+
+  const BandeJoueur({
+    super.key,
+    required this.estBlanc,
+    required this.nom,
+    required this.actif,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3EFE7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: actif ? const Color(0xFF8E24AA) : Colors.transparent,
+          width: 3
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            child: Image.asset(
+              estBlanc ? 'assets/images/wp.png' : 'assets/images/bp.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          const SizedBox(width: 10),
+          Text(
+            nom,
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
 
 class _JeuState extends State<Jeu> {
   late List<List<ChessPiece?>> board;
@@ -35,35 +94,39 @@ class _JeuState extends State<Jeu> {
   void initState() {
     super.initState();
 
+    // Initialisation du plateau et joueurs
     board = ChessBoard.getInitialBoard();
     casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
     joueurBlanc = const Joueur(nom: 'Blanc', estBlanc: true);
     joueurNoir = const Joueur(nom: 'Noir', estBlanc: false);
     joueurActuel = joueurBlanc;
 
+    // Récupérer les types de joueurs depuis widget
+    joueurBlancType = widget.joueurBlancType;
+    joueurNoirType = widget.joueurNoirType;
+
     stockfish = Stockfish();
 
-    // Écoute une fois la sortie du moteur, tout au long du jeu
+    // Écoute des coups du moteur
     stockfish.stdout.listen((event) {
-      print('Réponse du moteur: $event');
-      if (event.contains('bestmove')) {
+      if (event.contains('bestmove') && isBotThinking) {
         final moveStr = event.split(' ')[1];
-        print('Meilleur coup trouvé par Stockfish : $moveStr');
-        if (isBotThinking) {
-          _jouerCoupDepuisString(moveStr);
-          isBotThinking = false;
-        }
+        _jouerCoupDepuisString(moveStr);
+        isBotThinking = false;
       }
     });
 
-    // Dès que le moteur est prêt, si c’est au bot de jouer, demande un coup
+    // Quand le moteur est prêt, si le bot commence, on lui demande un coup
     stockfish.state.addListener(() {
-      if (stockfish.state.value == StockfishState.ready) {
-        if (_isBotTurn()) {
-          _demanderCoupStockfish();
-        }
+      if (stockfish.state.value == StockfishState.ready && _isBotTurn()) {
+        _demanderCoupStockfish();
       }
     });
+
+    // Si bot commence (ex : bot blanc), lance le coup
+    if (_isBotTurn()) {
+      _demanderCoupStockfish();
+    }
   }
 
   bool _isBotTurn() {
@@ -160,8 +223,7 @@ class _JeuState extends State<Jeu> {
         selectedRow = null;
         selectedCol = null;
         casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
-
-        _switchPlayer();
+        joueurActuel = (joueurActuel == joueurBlanc) ? joueurNoir : joueurBlanc;
       });
 
       verifierPromotion(row, col);
@@ -186,6 +248,7 @@ class _JeuState extends State<Jeu> {
       });
     }
   }
+
   Future<void> verifierPromotion(int row, int col) async {
     final piece = board[row][col];
     if (piece == null || piece.type != ChessPieceType.pawn) return;
@@ -433,26 +496,58 @@ class _JeuState extends State<Jeu> {
 
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3EFE7), // Fond violet clair
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 16.0),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  BandeJoueur(
+                    estBlanc: true,
+                    nom: joueurBlanc.nom,
+                    actif: joueurActuel == joueurBlanc,
+                  ),
+                  BandeJoueur(
+                    estBlanc: false,
+                    nom: joueurNoir.nom,
+                    actif: joueurActuel == joueurNoir,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Text("Au tour de : ${joueurActuel.nom}",
-              style: const TextStyle(fontSize: 20)),
-        ),
-        Expanded(
-          child: Center(
-            child: ChessBoard(
-              board: board,
-              casesPossibles: casesPossibles,
-              onTapCase: onTapCase,
-            ),
+              Expanded(
+                child: Center(
+                  child: ChessBoard(
+                    board: board,
+                    casesPossibles: casesPossibles,
+                    onTapCase: onTapCase,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  child: Image.asset(
+                    'assets/images/home.png',
+                    width: 70,
+                    height: 70,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
-
-
