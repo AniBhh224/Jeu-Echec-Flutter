@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:stockfish/stockfish.dart';
 import 'board.dart';
 import 'pieces.dart';
 import 'joueur.dart';
+import 'utils.dart';
+
+enum PlayerType { human, bot }
 
 class Jeu extends StatefulWidget {
   const Jeu({super.key});
@@ -14,6 +18,12 @@ class _JeuState extends State<Jeu> {
   late List<List<ChessPiece?>> board;
   late List<List<bool>> casesPossibles;
 
+  PlayerType joueurBlancType = PlayerType.bot;
+  PlayerType joueurNoirType = PlayerType.human; // exemple : bot joue noir
+
+  late Stockfish stockfish;
+  bool isBotThinking = false;
+
   int? selectedRow;
   int? selectedCol;
 
@@ -24,11 +34,97 @@ class _JeuState extends State<Jeu> {
   @override
   void initState() {
     super.initState();
+
     board = ChessBoard.getInitialBoard();
     casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
     joueurBlanc = const Joueur(nom: 'Blanc', estBlanc: true);
     joueurNoir = const Joueur(nom: 'Noir', estBlanc: false);
     joueurActuel = joueurBlanc;
+
+    stockfish = Stockfish();
+
+    // Écoute une fois la sortie du moteur, tout au long du jeu
+    stockfish.stdout.listen((event) {
+      print('Réponse du moteur: $event');
+      if (event.contains('bestmove')) {
+        final moveStr = event.split(' ')[1];
+        print('Meilleur coup trouvé par Stockfish : $moveStr');
+        if (isBotThinking) {
+          _jouerCoupDepuisString(moveStr);
+          isBotThinking = false;
+        }
+      }
+    });
+
+    // Dès que le moteur est prêt, si c’est au bot de jouer, demande un coup
+    stockfish.state.addListener(() {
+      if (stockfish.state.value == StockfishState.ready) {
+        if (_isBotTurn()) {
+          _demanderCoupStockfish();
+        }
+      }
+    });
+  }
+
+  bool _isBotTurn() {
+    return (joueurActuel == joueurBlanc && joueurBlancType == PlayerType.bot) ||
+        (joueurActuel == joueurNoir && joueurNoirType == PlayerType.bot);
+  }
+
+
+  Future<void> _demanderCoupStockfish() async {
+    if (isBotThinking) {
+      print('Bot est déjà en train de réfléchir, sortie.');
+      return;
+    }
+    isBotThinking = true;
+    print('Bot commence à réfléchir...');
+
+    final fen = toFEN(board, isWhiteTurn: joueurActuel.estBlanc);
+    print('Position FEN envoyée au moteur: $fen');
+
+    stockfish.stdin = 'position fen $fen';
+    stockfish.stdin = 'go movetime 1000';
+  }
+
+  /// Change le joueur actif et lance le bot si c’est son tour
+  void _switchPlayer() {
+    if (joueurActuel == joueurBlanc) {
+      joueurActuel = joueurNoir;
+    } else {
+      joueurActuel = joueurBlanc;
+    }
+  }
+
+  void _jouerCoupDepuisString(String move) {
+
+    if (move.length < 4) return;
+
+    // Calcul positions
+    int startCol = move.codeUnitAt(0) - 'a'.codeUnitAt(0);
+    int startRow = 8 - int.parse(move[1]);
+    int endCol = move.codeUnitAt(2) - 'a'.codeUnitAt(0);
+    int endRow = 8 - int.parse(move[3]);
+
+    setState(() {
+      board[endRow][endCol] = board[startRow][startCol];
+      board[startRow][startCol] = null;
+
+      // Switch player ici, AVANT d'appeler le bot
+      _switchPlayer();
+
+      selectedRow = null;
+      selectedCol = null;
+      casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
+    });
+
+    isBotThinking = false; // le bot a fini de jouer
+
+    if (_isBotTurn()) {
+      _demanderCoupStockfish();
+    }
+    print('Couleur pion déplacé: ${board[startRow][startCol]?.isWhite}');
+
   }
 
   void onTapCase(int row, int col) {
@@ -64,10 +160,17 @@ class _JeuState extends State<Jeu> {
         selectedRow = null;
         selectedCol = null;
         casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
-        joueurActuel = (joueurActuel == joueurBlanc) ? joueurNoir : joueurBlanc;
+
+        _switchPlayer();
       });
 
       verifierPromotion(row, col);
+
+      // Si c'est le tour du bot, on demande un coup après la promotion
+      if (_isBotTurn()) {
+        _demanderCoupStockfish();
+      }
+
       return;
     }
 
@@ -83,7 +186,6 @@ class _JeuState extends State<Jeu> {
       });
     }
   }
-
   Future<void> verifierPromotion(int row, int col) async {
     final piece = board[row][col];
     if (piece == null || piece.type != ChessPieceType.pawn) return;
@@ -331,6 +433,7 @@ class _JeuState extends State<Jeu> {
 
   @override
   Widget build(BuildContext context) {
+
     return Column(
       children: [
         Padding(
@@ -351,3 +454,5 @@ class _JeuState extends State<Jeu> {
     );
   }
 }
+
+
