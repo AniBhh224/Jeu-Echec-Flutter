@@ -1,4 +1,4 @@
-# chess1
+# Chess Flutter
 
 A new Flutter project.
 
