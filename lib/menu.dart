@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'menubot.dart';  // Assure-toi que ce fichier existe et est bien importé
 import 'jeu.dart';
-import 'pieces.dart'; // pour PlayerType
 
 class MenuPrincipal extends StatelessWidget {
   const MenuPrincipal({super.key});
@@ -24,7 +24,7 @@ class MenuPrincipal extends StatelessWidget {
 
               const SizedBox(height: 50),
 
-              // Bouton "Joueur seul" (Humain blanc vs Bot noir)
+              // Bouton "Joueur seul"
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: ElevatedButton(
@@ -36,13 +36,11 @@ class MenuPrincipal extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
+                    // Navigue vers le menu de configuration du bot
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const Jeu(
-                          joueurBlancType: PlayerType.human,
-                          joueurNoirType: PlayerType.bot,
-                        ),
+                        builder: (context) => const MenuBot(),
                       ),
                     );
                   },
@@ -57,7 +55,7 @@ class MenuPrincipal extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // Bouton "2 joueurs" (Humain blanc vs Humain noir)
+              // Bouton "2 joueurs"
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: OutlinedButton(
@@ -72,10 +70,7 @@ class MenuPrincipal extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const Jeu(
-                          joueurBlancType: PlayerType.human,
-                          joueurNoirType: PlayerType.human,
-                        ),
+                        builder: (context) => const Jeu(), // Partie 2 joueurs humains
                       ),
                     );
                   },

@@ -4,17 +4,22 @@ import 'board.dart';
 import 'pieces.dart';
 import 'joueur.dart';
 import 'utils.dart';
+import 'menu.dart';
+import 'player_type.dart';
 
-enum PlayerType { human, bot }
+
+
 
 class Jeu extends StatefulWidget {
   final PlayerType joueurBlancType;
   final PlayerType joueurNoirType;
+  final int niveauBot; // ajoute ce paramètre
 
   const Jeu({
     super.key,
     this.joueurBlancType = PlayerType.human,
     this.joueurNoirType = PlayerType.human,
+    this.niveauBot = 0, // valeur par défaut (niveau minimal)
   });
 
   @override
@@ -74,6 +79,9 @@ class BandeJoueur extends StatelessWidget {
 
 
 class _JeuState extends State<Jeu> {
+
+  bool estInverse = false; // par défaut pas inversé
+
   late List<List<ChessPiece?>> board;
   late List<List<bool>> casesPossibles;
 
@@ -89,10 +97,12 @@ class _JeuState extends State<Jeu> {
   late Joueur joueurBlanc;
   late Joueur joueurNoir;
   late Joueur joueurActuel;
+  late int niveauBot;
 
   @override
   void initState() {
     super.initState();
+    niveauBot = widget.niveauBot;  // récupère le niveau envoyé
 
     // Initialisation du plateau et joueurs
     board = ChessBoard.getInitialBoard();
@@ -136,16 +146,13 @@ class _JeuState extends State<Jeu> {
 
 
   Future<void> _demanderCoupStockfish() async {
-    if (isBotThinking) {
-      print('Bot est déjà en train de réfléchir, sortie.');
-      return;
-    }
+    if (isBotThinking) return;
     isBotThinking = true;
-    print('Bot commence à réfléchir...');
+
+    // Configure le niveau du bot
+    stockfish.stdin = 'setoption name Skill Level value $niveauBot';
 
     final fen = toFEN(board, isWhiteTurn: joueurActuel.estBlanc);
-    print('Position FEN envoyée au moteur: $fen');
-
     stockfish.stdin = 'position fen $fen';
     stockfish.stdin = 'go movetime 1000';
   }
@@ -157,7 +164,13 @@ class _JeuState extends State<Jeu> {
     } else {
       joueurActuel = joueurBlanc;
     }
+
+    // Inverse l'affichage seulement si les deux joueurs sont humains
+    if (joueurBlancType == PlayerType.human && joueurNoirType == PlayerType.human) {
+      estInverse = !estInverse;
+    }
   }
+
 
   void _jouerCoupDepuisString(String move) {
 
@@ -526,7 +539,9 @@ class _JeuState extends State<Jeu> {
                     board: board,
                     casesPossibles: casesPossibles,
                     onTapCase: onTapCase,
-                  ),
+                    estInverse: estInverse, // bool que tu changes après chaque coup
+                  )
+
                 ),
               ),
 
@@ -534,7 +549,11 @@ class _JeuState extends State<Jeu> {
               Center(
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.pop(context);
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MenuPrincipal()),
+                          (route) => false,
+                    );
                   },
                   child: Image.asset(
                     'assets/images/home.png',
