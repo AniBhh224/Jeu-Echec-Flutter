@@ -5,34 +5,30 @@ class ChessBoard extends StatelessWidget {
   final List<List<ChessPiece?>> board;
   final List<List<bool>> casesPossibles;
   final void Function(int row, int col) onTapCase;
-  final bool estInverse;  // <-- nouveau paramètre
+  final bool reverse; // <-- Ajouté
+
 
   const ChessBoard({
     super.key,
     required this.board,
     required this.casesPossibles,
     required this.onTapCase,
-    this.estInverse = false, // valeur par défaut : pas inversé
+    this.reverse = false, // false par défaut// valeur par défaut : pas inversé
   });
 
   static const Color lightSquare = Color(0xFFF3EFE7); // Beige clair
   static const Color darkSquare = Color(0xFF8E24AA);  // Violet foncé
-
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(8, (row) {
-          // Inverse l'ordre des rangées si estInverse = true
-          final displayRow = estInverse ? 7 - row : row;
-
+          int displayRow = reverse ? 7 - row : row;
           return Row(
             mainAxisSize: MainAxisSize.min,
             children: List.generate(8, (col) {
-              // Inverse l'ordre des colonnes si estInverse = true
-              final displayCol = estInverse ? 7 - col : col;
-
+              int displayCol = reverse ? 7 - col : col;
               bool isLight = (displayRow + displayCol) % 2 == 0;
 
               return GestureDetector(
@@ -73,7 +69,8 @@ class ChessBoard extends StatelessWidget {
     );
   }
 
-  static List<List<ChessPiece?>> getInitialBoard() {
+
+static List<List<ChessPiece?>> getInitialBoard() {
     final board = List.generate(8, (_) => List<ChessPiece?>.filled(8, null));
 
     for (int col = 0; col < 8; col++) {

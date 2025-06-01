@@ -71,13 +71,13 @@ class _MenuBotState extends State<MenuBot> {
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => Jeu(
+                    builder: (context) => Jeu(
                       joueurBlancType: joueBlanc ? PlayerType.human : PlayerType.bot,
                       joueurNoirType: joueBlanc ? PlayerType.bot : PlayerType.human,
-                      niveauBot: niveauBot,
+                      isBoardReversed: !joueBlanc, // inversé si joueur humain est noir
                     ),
                   ),
                 );

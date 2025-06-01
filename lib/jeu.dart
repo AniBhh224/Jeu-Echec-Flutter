@@ -11,15 +11,19 @@ import 'player_type.dart';
 
 
 class Jeu extends StatefulWidget {
+
   final PlayerType joueurBlancType;
   final PlayerType joueurNoirType;
+  final bool isBoardReversed; // <-- Ajouté
   final int niveauBot; // ajoute ce paramètre
 
   const Jeu({
     super.key,
     this.joueurBlancType = PlayerType.human,
     this.joueurNoirType = PlayerType.human,
+    this.isBoardReversed = false,
     this.niveauBot = 0, // valeur par défaut (niveau minimal)
+
   });
 
   @override
@@ -84,6 +88,7 @@ class _JeuState extends State<Jeu> {
 
   late List<List<ChessPiece?>> board;
   late List<List<bool>> casesPossibles;
+  late bool isBoardReversed;
 
   PlayerType joueurBlancType = PlayerType.bot;
   PlayerType joueurNoirType = PlayerType.human; // exemple : bot joue noir
@@ -102,22 +107,25 @@ class _JeuState extends State<Jeu> {
   @override
   void initState() {
     super.initState();
-    niveauBot = widget.niveauBot;  // récupère le niveau envoyé
 
-    // Initialisation du plateau et joueurs
+    niveauBot = widget.niveauBot;
+
     board = ChessBoard.getInitialBoard();
     casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
     joueurBlanc = const Joueur(nom: 'Blanc', estBlanc: true);
     joueurNoir = const Joueur(nom: 'Noir', estBlanc: false);
     joueurActuel = joueurBlanc;
 
-    // Récupérer les types de joueurs depuis widget
     joueurBlancType = widget.joueurBlancType;
     joueurNoirType = widget.joueurNoirType;
 
+    print('DEBUG INIT: Bot blanc ? ${joueurBlancType == PlayerType.bot}');
+    print('DEBUG INIT: Bot noir ? ${joueurNoirType == PlayerType.bot}');
+    print('DEBUG INIT: Joueur actuel : ${joueurActuel.nom}');
+    print('DEBUG INIT: Est bot turn ? ${_isBotTurn()}');
+
     stockfish = Stockfish();
 
-    // Écoute des coups du moteur
     stockfish.stdout.listen((event) {
       if (event.contains('bestmove') && isBotThinking) {
         final moveStr = event.split(' ')[1];
@@ -126,17 +134,15 @@ class _JeuState extends State<Jeu> {
       }
     });
 
-    // Quand le moteur est prêt, si le bot commence, on lui demande un coup
     stockfish.state.addListener(() {
+      print('DEBUG: Stockfish state changed: ${stockfish.state.value}');
       if (stockfish.state.value == StockfishState.ready && _isBotTurn()) {
+        print('DEBUG: Moteur prêt et bot doit jouer son coup...');
         _demanderCoupStockfish();
       }
     });
 
-    // Si bot commence (ex : bot blanc), lance le coup
-    if (_isBotTurn()) {
-      _demanderCoupStockfish();
-    }
+    isBoardReversed = widget.isBoardReversed;
   }
 
   bool _isBotTurn() {
@@ -539,8 +545,9 @@ class _JeuState extends State<Jeu> {
                     board: board,
                     casesPossibles: casesPossibles,
                     onTapCase: onTapCase,
-                    estInverse: estInverse, // bool que tu changes après chaque coup
-                  )
+                    reverse: isBoardReversed,
+                  ),
+
 
                 ),
               ),
