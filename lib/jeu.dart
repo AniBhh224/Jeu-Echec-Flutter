@@ -6,6 +6,8 @@ import 'joueur.dart';
 import 'utils.dart';
 import 'menu.dart';
 import 'player_type.dart';
+import 'dart:async';
+
 
 
 
@@ -14,8 +16,12 @@ class Jeu extends StatefulWidget {
 
   final PlayerType joueurBlancType;
   final PlayerType joueurNoirType;
-  final bool isBoardReversed; // <-- Ajouté
-  final int niveauBot; // ajoute ce paramètre
+  final bool isBoardReversed; 
+  final int niveauBot; 
+  final Duration? duration;
+  final String nomJoueurBlanc;
+  final String nomJoueurNoir;
+
 
   const Jeu({
     super.key,
@@ -23,6 +29,9 @@ class Jeu extends StatefulWidget {
     this.joueurNoirType = PlayerType.human,
     this.isBoardReversed = false,
     this.niveauBot = 0, // valeur par défaut (niveau minimal)
+    this.duration,
+    this.nomJoueurBlanc = 'Joueur Blanc',
+    this.nomJoueurNoir = 'Joueur Noir',
 
   });
 
@@ -84,6 +93,18 @@ class BandeJoueur extends StatelessWidget {
 
 class _JeuState extends State<Jeu> {
 
+  String _formatDuration(Duration duration) {
+  String minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+  String seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return "$minutes:$seconds";
+}
+
+
+  Duration _tempsRestantBlanc = Duration.zero;
+  Duration _tempsRestantNoir = Duration.zero;
+  Timer? _timer;
+
+
   bool estInverse = false; // par défaut pas inversé
 
   late List<List<ChessPiece?>> board;
@@ -112,8 +133,9 @@ class _JeuState extends State<Jeu> {
 
     board = ChessBoard.getInitialBoard();
     casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
-    joueurBlanc = const Joueur(nom: 'Blanc', estBlanc: true);
-    joueurNoir = const Joueur(nom: 'Noir', estBlanc: false);
+    joueurBlanc = Joueur(nom: widget.nomJoueurBlanc, estBlanc: true);
+    joueurNoir = Joueur(nom: widget.nomJoueurNoir, estBlanc: false);
+
     joueurActuel = joueurBlanc;
 
     joueurBlancType = widget.joueurBlancType;
@@ -143,6 +165,14 @@ class _JeuState extends State<Jeu> {
     });
 
     isBoardReversed = widget.isBoardReversed;
+    if (widget.duration != null &&
+    joueurBlancType == PlayerType.human &&
+    joueurNoirType == PlayerType.human) {
+  _tempsRestantBlanc = widget.duration!;
+  _tempsRestantNoir = widget.duration!;
+  _demarrerTimer();
+}
+
   }
 
   bool _isBotTurn() {
@@ -175,6 +205,13 @@ class _JeuState extends State<Jeu> {
     if (joueurBlancType == PlayerType.human && joueurNoirType == PlayerType.human) {
       estInverse = !estInverse;
     }
+
+    if (widget.duration != null &&
+    joueurBlancType == PlayerType.human &&
+    joueurNoirType == PlayerType.human) {
+  _demarrerTimer();
+}
+
   }
 
 
@@ -539,18 +576,68 @@ class _JeuState extends State<Jeu> {
               ),
               const SizedBox(height: 12),
 
-              Expanded(
-                child: Center(
-                  child: ChessBoard(
-                    board: board,
-                    casesPossibles: casesPossibles,
-                    onTapCase: onTapCase,
-                    reverse: isBoardReversed,
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: ChessBoard(
+                          board: board,
+                          casesPossibles: casesPossibles,
+                          onTapCase: onTapCase,
+                          reverse: isBoardReversed,
+                        ),
+                      ),
+                      if (widget.duration != null &&
+                          joueurBlancType == PlayerType.human &&
+                          joueurNoirType == PlayerType.human) ...[
+                        //  Timer des Noirs en haut à gauche
+                      Positioned(
+                        top: 10,
+                        left: 10,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(joueurNoir.nom, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white70,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _formatDuration(_tempsRestantNoir),
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 10,
+                        right: 10,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(joueurBlanc.nom, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white70,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _formatDuration(_tempsRestantBlanc),
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      ],
+                    ],
                   ),
-
-
                 ),
-              ),
 
               const SizedBox(height: 12),
               Center(
@@ -576,4 +663,62 @@ class _JeuState extends State<Jeu> {
       ),
     );
   }
+
+  void _demarrerTimer() {
+  _timer?.cancel();
+  if (widget.duration == null) return;
+
+  _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+    setState(() {
+      if (joueurActuel == joueurBlanc) {
+        _tempsRestantBlanc -= const Duration(seconds: 1);
+        if (_tempsRestantBlanc.inSeconds <= 0) {
+          _timer?.cancel();
+          _finDePartie("Temps écoulé pour Blanc !");
+        }
+      } else {
+        _tempsRestantNoir -= const Duration(seconds: 1);
+        if (_tempsRestantNoir.inSeconds <= 0) {
+          _timer?.cancel();
+          _finDePartie("Temps écoulé pour Noir !");
+        }
+      }
+    });
+  });
+}
+
+
+void _finDePartie(String message) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AlertDialog(
+      title: const Text("Fin de partie"),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const MenuPrincipal()),
+              (_) => false,
+            );
+          },
+          child: const Text("Retour au menu"),
+        ),
+      ],
+    ),
+  );
+}
+
+
+  @override
+void dispose() {
+  stockfish.stdin = 'quit';
+  stockfish.dispose();
+  super.dispose();
+  _timer?.cancel();
+
+}
+
 }

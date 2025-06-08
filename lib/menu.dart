@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'menubot.dart';  // Assure-toi que ce fichier existe et est bien importé
-import 'jeu.dart';
+import 'menubot.dart';
+import 'timer_selection.dart';
 
 class MenuPrincipal extends StatelessWidget {
   const MenuPrincipal({super.key});
@@ -8,7 +8,7 @@ class MenuPrincipal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEDE7F6), // Fond violet très clair
+      backgroundColor: const Color(0xFFEDE7F6),
       body: SafeArea(
         child: Center(
           child: Column(
@@ -21,7 +21,6 @@ class MenuPrincipal extends StatelessWidget {
                   height: 400,
                 ),
               ),
-
               const SizedBox(height: 50),
 
               // Bouton "Joueur seul"
@@ -29,19 +28,16 @@ class MenuPrincipal extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7B1FA2), // Violet foncé
+                    backgroundColor: const Color(0xFF7B1FA2),
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   onPressed: () {
-                    // Navigue vers le menu de configuration du bot
-                    Navigator.push(
+                    Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const MenuBot(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const MenuBot()),
                     );
                   },
                   child: const Center(
@@ -67,10 +63,10 @@ class MenuPrincipal extends StatelessWidget {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.push(
+                    Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const Jeu(), // Partie 2 joueurs humains
+                        builder: (_) => const TimerSelectionPage(),
                       ),
                     );
                   },
