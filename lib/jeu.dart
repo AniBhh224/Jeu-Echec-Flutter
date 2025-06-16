@@ -141,11 +141,6 @@ class _JeuState extends State<Jeu> {
     joueurBlancType = widget.joueurBlancType;
     joueurNoirType = widget.joueurNoirType;
 
-    print('DEBUG INIT: Bot blanc ? ${joueurBlancType == PlayerType.bot}');
-    print('DEBUG INIT: Bot noir ? ${joueurNoirType == PlayerType.bot}');
-    print('DEBUG INIT: Joueur actuel : ${joueurActuel.nom}');
-    print('DEBUG INIT: Est bot turn ? ${_isBotTurn()}');
-
     stockfish = Stockfish();
 
     stockfish.stdout.listen((event) {
@@ -157,9 +152,7 @@ class _JeuState extends State<Jeu> {
     });
 
     stockfish.state.addListener(() {
-      print('DEBUG: Stockfish state changed: ${stockfish.state.value}');
       if (stockfish.state.value == StockfishState.ready && _isBotTurn()) {
-        print('DEBUG: Moteur prêt et bot doit jouer son coup...');
         _demanderCoupStockfish();
       }
     });
@@ -229,12 +222,21 @@ class _JeuState extends State<Jeu> {
       board[endRow][endCol] = board[startRow][startCol];
       board[startRow][startCol] = null;
 
-      // Switch player ici, AVANT d'appeler le bot
+      if (_estEchecEtMat(!(joueurActuel.estBlanc))) {
+        _finDePartie("Échec et mat ! ${joueurActuel.nom} gagne !");
+        return;
+      }
+
       _switchPlayer();
 
       selectedRow = null;
       selectedCol = null;
       casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
+      if (_estEchecEtMat(!joueurActuel.estBlanc)) {
+        _finDePartie("Échec et mat ! ${joueurActuel.nom} gagne !");
+        return;
+}
+
     });
 
     isBotThinking = false; // le bot a fini de jouer
@@ -279,10 +281,21 @@ class _JeuState extends State<Jeu> {
         selectedRow = null;
         selectedCol = null;
         casesPossibles = List.generate(8, (_) => List.generate(8, (_) => false));
+               // Vérifie s'il y a échec et mat pour l'adversaire
+        if (_estEchecEtMat(!(joueurActuel.estBlanc))) {
+          _finDePartie("Échec et mat ! ${joueurActuel.nom} gagne !");
+          return;
+        }
+
         joueurActuel = (joueurActuel == joueurBlanc) ? joueurNoir : joueurBlanc;
       });
 
       verifierPromotion(row, col);
+
+      if (_estEchecEtMat(!joueurActuel.estBlanc)) {
+        _finDePartie("Échec et mat ! ${joueurActuel.nom} gagne !");
+        return;
+}
 
       // Si c'est le tour du bot, on demande un coup après la promotion
       if (_isBotTurn()) {
@@ -548,6 +561,36 @@ class _JeuState extends State<Jeu> {
     return false;
   }
 
+bool _estEchecEtMat(bool estBlanc) {
+  if (!kingIsChecked(estBlanc)) return false;
+
+  for (int row = 0; row < 8; row++) {
+    for (int col = 0; col < 8; col++) {
+      final piece = board[row][col];
+      if (piece != null && piece.isWhite == estBlanc) {
+        final coups = _getCoupsPotentielsDepuis(row, col);
+        for (int r = 0; r < 8; r++) {
+          for (int c = 0; c < 8; c++) {
+            if (coups[r][c]) {
+              final backupPiece = board[r][c];
+              board[r][c] = board[row][col];
+              board[row][col] = null;
+              bool encoreEnEchec = kingIsChecked(estBlanc);
+              board[row][col] = board[r][c];
+              board[r][c] = backupPiece;
+
+              if (!encoreEnEchec) return false;
+            }
+          }
+        }
+      }
+    }
+  }
+  return true;
+}
+
+
+
   bool _inBounds(int row, int col) => row >= 0 && row < 8 && col >= 0 && col < 8;
 
   @override
@@ -687,7 +730,6 @@ class _JeuState extends State<Jeu> {
   });
 }
 
-
 void _finDePartie(String message) {
   showDialog(
     context: context,
@@ -710,6 +752,7 @@ void _finDePartie(String message) {
     ),
   );
 }
+
 
 
   @override

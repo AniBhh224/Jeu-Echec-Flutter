@@ -5,72 +5,90 @@ class ChessBoard extends StatelessWidget {
   final List<List<ChessPiece?>> board;
   final List<List<bool>> casesPossibles;
   final void Function(int row, int col) onTapCase;
-  final bool reverse; // <-- Ajouté
-
+  final bool reverse;
 
   const ChessBoard({
     super.key,
     required this.board,
     required this.casesPossibles,
     required this.onTapCase,
-    this.reverse = false, // false par défaut// valeur par défaut : pas inversé
+    this.reverse = false,
   });
 
-  static const Color lightSquare = Color(0xFFF3EFE7); // Beige clair
-  static const Color darkSquare = Color(0xFF8E24AA);  // Violet foncé
+  static const Color lightSquare = Color(0xFFF3EFE7);
+  static const Color darkSquare = Color(0xFF8E24AA);
+
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(8, (row) {
-          int displayRow = reverse ? 7 - row : row;
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(8, (col) {
-              int displayCol = reverse ? 7 - col : col;
-              bool isLight = (displayRow + displayCol) % 2 == 0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double boardSize = constraints.maxWidth < constraints.maxHeight
+            ? constraints.maxWidth
+            : constraints.maxHeight;
 
-              return GestureDetector(
-                onTap: () => onTapCase(displayRow, displayCol),
-                child: Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: isLight ? lightSquare : darkSquare,
-                  ),
-                  child: Stack(
-                    children: [
-                      if (casesPossibles[displayRow][displayCol])
-                        Container(color: Colors.green.withOpacity(0.4)),
-                      if (board[displayRow][displayCol] != null)
-                        Center(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  offset: const Offset(2, 2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            child: board[displayRow][displayCol]!.buildImage(size: 44),
-                          ),
+        final double caseSize = boardSize / 8;
+
+        return Center(
+          child: SizedBox(
+            width: boardSize,
+            height: boardSize,
+            child: Column(
+              children: List.generate(8, (row) {
+                int displayRow = reverse ? 7 - row : row;
+                return Row(
+                  children: List.generate(8, (col) {
+                    int displayCol = reverse ? 7 - col : col;
+                    bool isLight = (displayRow + displayCol) % 2 == 0;
+
+                    return GestureDetector(
+                      onTap: () => onTapCase(displayRow, displayCol),
+                      child: Container(
+                        width: caseSize,
+                        height: caseSize,
+                        decoration: BoxDecoration(
+                          color: isLight ? lightSquare : darkSquare,
                         ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          );
-        }),
-      ),
+                        child: Stack(
+                          children: [
+                            if (casesPossibles[displayRow][displayCol])
+                              Container(
+  decoration: BoxDecoration(
+    color: Colors.amberAccent.withOpacity(0.5),
+    border: Border.all(color: Colors.black, width: 2),
+    borderRadius: BorderRadius.circular(6),
+  ),
+),
+                            if (board[displayRow][displayCol] != null)
+                              Center(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        offset: const Offset(2, 2),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                  child: board[displayRow][displayCol]!
+                                      .buildImage(size: caseSize * 0.88),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                );
+              }),
+            ),
+          ),
+        );
+      },
     );
   }
 
-
-static List<List<ChessPiece?>> getInitialBoard() {
+  static List<List<ChessPiece?>> getInitialBoard() {
     final board = List.generate(8, (_) => List<ChessPiece?>.filled(8, null));
 
     for (int col = 0; col < 8; col++) {
